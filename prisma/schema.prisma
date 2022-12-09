@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+    id                 Int      @id @default(autoincrement())
+    first_name         String
+    last_name          String
+    email              String   @unique
+    password           String
+    authenticated      Boolean
+    role               ROLES
+    createdAt          DateTime @default(now())
+    updatedAt          DateTime @updatedAt
+    hasUpdatedPassword Boolean  @default(false)
+    // Relationships
+    tokens             Token[]
+}
+
+model Token {
+    id         Int       @id @default(autoincrement())
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+    type       TokenType
+    emailToken String?   @unique
+    valid      Boolean   @default(true)
+    expiration DateTime
+
+    // Relationships
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId Int
+}
+
+model Brand {
+    id        Int       @id @default(autoincrement())
+    name      String    @unique
+    models    Model[]
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    machines  Machine[]
+}
+
+model Model {
+    id        Int       @id @default(autoincrement())
+    name      String    @unique
+    brandId   Int
+    brand     Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+    type      COLOR
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    machines  Machine[]
+}
+
+model Machine {
+    id         Int         @id @default(autoincrement())
+    brandId    Int
+    brand      Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
+    modelId    Int
+    model      Model       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+    status     String
+    serial     String      @unique
+    brandName  String
+    modelName  String
+    type       String
+    department Department?
+}
+
+model Client {
+    id       Int      @id @default(autoincrement())
+    name     String   @unique
+    contacts Json
+    branch   Branch[]
+}
+
+model Branch {
+    id          Int          @id @default(autoincrement())
+    name        String
+    clientId    Int
+    client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+    contacts    Json
+    address     Json
+    departments Department[]
+}
+
+model Department {
+    id        Int     @id @default(autoincrement())
+    name      String
+    branchId  Int
+    branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    clientId  Int
+    machineId Int     @unique
+    machine   Machine @relation(fields: [machineId], references: [id], onDelete: SetDefault)
+}
+
+enum COLOR {
+    BLACKANDWHITE
+    COLOR
+}
+
+enum ROLES {
+    ADMIN
+    USER
+    SUDO
+}
+
+enum TokenType {
+    EMAIL
+    API
+}
